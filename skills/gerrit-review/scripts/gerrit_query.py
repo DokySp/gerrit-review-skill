@@ -55,9 +55,7 @@ def account_config_guidance(path: Path) -> dict[str, Any]:
         "configured": False,
         "config_path": display_config_path(path),
         "message": "Gerrit account config is required before using gerrit-review.",
-        "next_step": (
-            "scripts/configure_account.py --user <gerrit-user> --base-url <gerrit-rest-base-url> --prompt-password"
-        ),
+        "next_step": "scripts/configure_account.py",
     }
 
 

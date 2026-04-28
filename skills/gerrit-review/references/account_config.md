@@ -16,14 +16,13 @@ Use a non-default path only when explicitly requested:
 scripts/configure_account.py --config /path/to/account.json --show
 ```
 
-Create or update config:
+Create or update config interactively:
 
 ```bash
-scripts/configure_account.py \
-  --user <gerrit-user> \
-  --base-url <gerrit-rest-base-url> \
-  --prompt-password
+scripts/configure_account.py
 ```
+
+Enter the Gerrit user, REST base URL, and REST authentication only at the prompts. Do not put account values, passwords, base URLs, or auth headers in shell commands.
 
 Show config:
 
@@ -71,21 +70,10 @@ For draft creation, store REST authentication in the skill-local config file. Us
 }
 ```
 
-You can write or update `account.password` with an interactive prompt. If `account.user` and `account.base_url` are already configured, this updates only the password:
+Run the interactive config command again to update any stored value:
 
 ```bash
-scripts/configure_account.py --prompt-password
+scripts/configure_account.py
 ```
 
-For first-time setup:
-
-```bash
-scripts/configure_account.py \
-  --user <gerrit-user> \
-  --base-url <gerrit-rest-base-url> \
-  --prompt-password
-```
-
-Use `--password <gerrit-http-password>` only for non-interactive automation. Prefer `--prompt-password` for normal use because command-line arguments can be saved in shell history.
-
-If the config file is missing, stop immediately and show the create config command. Do not infer account data from `git remote` as a replacement for the explicit account config.
+If the config file is missing, stop immediately and show `scripts/configure_account.py` as the next step. Do not infer account data from `git remote` as a replacement for the explicit account config.

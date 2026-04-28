@@ -14,13 +14,11 @@ Use this skill to inspect Gerrit reviews from a local repository, validate AI re
 0. Check account configuration first:
    - Run `scripts/configure_account.py --show` or use scripts that load the skill-local `config/account.json`.
    - If account config is missing or incomplete, stop immediately. Do not collect repo context, query Gerrit, build draft requests, or post anything.
-   - Guide the user to configure the account:
-     `scripts/configure_account.py --user <gerrit-user> --base-url <gerrit-rest-base-url> --prompt-password`.
+   - Guide the user to configure the account with `scripts/configure_account.py` and enter values at the interactive prompts.
    - Distribute `config/account.json` as an empty placeholder. It must contain no real user, password, or base URL values.
    - Before committing or publishing the skill, verify `config/account.json` is still empty and contains only blank `account.user`, `account.password`, and `account.base_url` fields.
    - Store Gerrit account and REST authentication in the skill-local config file, not environment variables. Use `account.user`, `account.password`, and `account.base_url`, or `account.auth_header` formatted as `Header-Name: value`.
-   - Prefer `--prompt-password` for password setup because it avoids putting the password directly in shell history. `--password <value>` is supported only for non-interactive automation.
-   - If `account.user` and `account.base_url` are already configured, `scripts/configure_account.py --prompt-password` may be used by itself to update only `account.password`.
+   - Do not place account values, passwords, base URLs, or auth headers in shell commands. `scripts/configure_account.py` collects them interactively so they are not saved in shell history.
    - Reuse `account.user` for both SSH and REST. Do not store a separate `ssh.user` or `rest.user`.
    - Do not store Gerrit SSH host, SSH port, project, or package in the account config. Infer SSH host/port from `git remote -v`; use `scripts/gerrit_query.py --host <host> --port <port>` only as an explicit override.
    - Keep any required Gerrit REST context path in `account.base_url`, but redact this value from normal output. This is different from storing a project/package name.
@@ -124,7 +122,7 @@ When responding in this user's repositories, split final answers into `사실` a
 
 ## Resources
 
-- Use `scripts/configure_account.py` to create or inspect Gerrit account config at the skill-local `config/account.json`; use `--config` only when an explicit alternate file is needed.
+- Use `scripts/configure_account.py` to interactively create Gerrit account config at the skill-local `config/account.json`; use `scripts/configure_account.py --show` to inspect redacted config; use `--config` only when an explicit alternate file is needed.
 - Use `scripts/gerrit_query.py` to detect local Gerrit context, run SSH query, parse JSON lines, remove stats rows, and normalize comments.
 - Use `scripts/build_review_input.py` to convert reply drafts into Gerrit `ReviewInput` JSON.
 - Use `scripts/create_draft_comments.py` to turn reply drafts into REST draft `CommentInput` requests and optionally create them.

@@ -37,21 +37,47 @@ def read_config(path: Path) -> dict[str, Any]:
         return json.load(handle)
 
 
-def build_config(args: argparse.Namespace, existing: dict[str, Any] | None = None) -> dict[str, Any]:
+def prompt_text(label: str, existing: str = "") -> str:
+    suffix = " [keep existing]" if existing else ""
+    value = input(f"{label}{suffix}: ").strip()
+    return value or existing
+
+
+def prompt_secret(label: str, existing: str = "") -> str:
+    suffix = " [leave blank to keep existing]" if existing else ""
+    value = getpass.getpass(f"{label}{suffix}: ")
+    return value or existing
+
+
+def build_interactive_config(existing: dict[str, Any] | None = None) -> dict[str, Any]:
     account = dict((existing or {}).get("account") or {})
 
-    if args.user is not None:
-        account["user"] = args.user
-    if args.base_url is not None:
-        account["base_url"] = args.base_url
-    if args.password is not None:
-        account["password"] = args.password
-    if args.prompt_password:
-        account["password"] = getpass.getpass("Gerrit HTTP password: ")
-    account.setdefault("password", "")
+    account["user"] = prompt_text("Gerrit account username", str(account.get("user", "")))
+    account["base_url"] = prompt_text("Gerrit REST base URL", str(account.get("base_url", "")))
 
-    if args.auth_header:
-        account["auth_header"] = args.auth_header
+    existing_auth_header = str(account.get("auth_header", ""))
+    existing_password = str(account.get("password", ""))
+    default_method = "auth-header" if existing_auth_header else "password"
+    method = input(
+        "REST authentication method [password/auth-header/none] "
+        f"(default {default_method}): "
+    ).strip().lower() or default_method
+
+    if method == "password":
+        account["password"] = prompt_secret("Gerrit HTTP password", existing_password)
+        account.pop("auth_header", None)
+    elif method == "auth-header":
+        account["auth_header"] = prompt_secret(
+            "REST auth header, formatted as 'Header-Name: value'",
+            existing_auth_header,
+        )
+        account["password"] = ""
+    elif method == "none":
+        account["password"] = ""
+        account.pop("auth_header", None)
+    else:
+        raise ValueError("authentication method must be password, auth-header, or none")
+
     return {"account": account}
 
 
@@ -68,15 +94,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", help=f"Config path. Defaults to skill-local {DEFAULT_CONFIG_LABEL}")
     parser.add_argument("--show", action="store_true", help="Show the current config with secrets redacted")
-    parser.add_argument("--user", help="Gerrit account username used for both SSH and REST")
-    parser.add_argument("--base-url", help="Gerrit account base URL")
-    parser.add_argument("--password", help="Gerrit HTTP password for REST authentication")
-    parser.add_argument("--auth-header", help="Full REST auth header value, formatted as 'Header-Name: value'")
-    parser.add_argument(
-        "--prompt-password",
-        action="store_true",
-        help="Prompt for a Gerrit HTTP password and store it in the skill-local config",
-    )
     args = parser.parse_args()
 
     path = config_path(args.config)
@@ -87,9 +104,7 @@ def main() -> int:
                     {
                         "configured": False,
                         "config_path": display_path(path),
-                        "next_step": (
-                            "Run scripts/configure_account.py --user <user> --base-url <url> --prompt-password"
-                        ),
+                        "next_step": "Run scripts/configure_account.py and enter values at the prompts",
                     },
                     indent=2,
                 )
@@ -117,14 +132,10 @@ def main() -> int:
         return 0
 
     existing = read_config(path) if path.exists() else {}
-    has_update = any(
-        value is not None
-        for value in (args.user, args.base_url, args.password, args.auth_header)
-    ) or args.prompt_password
-    if not has_update:
-        parser.error("provide at least one setting to update, or use --show")
-
-    config = build_config(args, existing)
+    try:
+        config = build_interactive_config(existing)
+    except ValueError as error:
+        parser.error(str(error))
     errors = validate_config(config)
     if errors:
         parser.error("; ".join(errors))

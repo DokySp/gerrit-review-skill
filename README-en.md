@@ -68,22 +68,19 @@ Use another config file only when explicitly needed with `--config`.
 scripts/configure_account.py --config /path/to/account.json --show
 ```
 
-Create the account config.
+Create or update the account config interactively.
 
 ```bash
-scripts/configure_account.py \
-  --user <gerrit-user> \
-  --base-url <gerrit-rest-base-url> \
-  --prompt-password
+scripts/configure_account.py
 ```
 
-If `account.user` and `account.base_url` are already configured, update only the password later:
+Enter the Gerrit user, REST base URL, and password or auth header only at the prompts. Do not put account values, passwords, base URLs, or auth headers in shell command arguments.
+
+If values are already configured, run the same command to update only the fields that need to change:
 
 ```bash
-scripts/configure_account.py --prompt-password
+scripts/configure_account.py
 ```
-
-Use `--password <gerrit-http-password>` only for non-interactive automation. Prefer `--prompt-password` for normal use because command-line arguments can be saved in shell history.
 
 Show the current config.
 

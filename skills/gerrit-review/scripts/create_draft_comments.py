@@ -47,9 +47,7 @@ def account_config_guidance(path: Path) -> dict[str, Any]:
         "configured": False,
         "config_path": display_config_path(path),
         "message": "Gerrit account config is required before using gerrit-review.",
-        "next_step": (
-            "scripts/configure_account.py --user <gerrit-user> --base-url <gerrit-rest-base-url> --prompt-password"
-        ),
+        "next_step": "scripts/configure_account.py",
     }
 
 
@@ -169,8 +167,8 @@ def main() -> int:
                     "config_path": display_config_path(config_path),
                     "message": "REST authentication is required for --execute.",
                     "next_step": (
-                        "Store REST auth in the skill-local config. Add account.user and "
-                        "account.password, or account.auth_header as 'Header-Name: value'."
+                        "Run scripts/configure_account.py and enter REST authentication "
+                        "at the prompt."
                     ),
                 },
                 indent=2,
