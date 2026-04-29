@@ -6,6 +6,22 @@ The default behavior is read-only analysis and dry-run output. Drafts or publish
 
 This skill requires local Gerrit account configuration before use. If the config is missing, scripts stop before querying Gerrit, creating drafts, or publishing comments, and print setup guidance instead.
 
+## Installation Location
+
+The actual skill folder in this repository is `skills/gerrit-review`. Place that folder in one of these locations for your environment.
+
+```bash
+# For a project-local skill checked in with a repository
+mkdir -p .agents/skills
+cp -R skills/gerrit-review .agents/skills/gerrit-review
+
+# For a personal global skill
+mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills"
+cp -R skills/gerrit-review "${CODEX_HOME:-$HOME/.codex}/skills/gerrit-review"
+```
+
+Both installation locations are supported. Scripts resolve `config/account.json`, `references/`, and `scripts/` relative to the installed `gerrit-review` skill folder, not relative to the installation root. When running scripts directly in a terminal, run them from the installed `gerrit-review` folder or use that folder's `scripts/...` path.
+
 ## Core Features
 
 - Collect local git context from `HEAD`, `Change-Id`, remotes, and branches.
