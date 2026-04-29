@@ -1,8 +1,8 @@
 # Gerrit Review Skill
 
-This Codex skill queries Gerrit patch set reviews, validates AI reviewer comments against the actual code, and prepares Gerrit reply drafts, draft comments, or real review comments.
+This Codex skill queries Gerrit patch set reviews and prepares Gerrit reply drafts, draft comments, or real review comments.
 
-The default behavior is read-only analysis and dry-run output. Drafts or published comments are created only when the user explicitly asks for them.
+The default behavior is read-only lookup and dry-run output. Drafts or published comments are created only when the user explicitly asks for them.
 
 This skill requires local Gerrit account configuration before use. If the config is missing, scripts stop before querying Gerrit, creating drafts, or publishing comments, and print setup guidance instead.
 
@@ -28,10 +28,9 @@ Both installation locations are supported. Scripts resolve `config/account.json`
 - Create and inspect local Gerrit account configuration.
 - Diagnose Gerrit SSH connectivity.
 - Query Gerrit change and patch set metadata.
-- Extract AI reviewer inline comments by file and line.
-- Inspect the target code and call paths behind each comment.
-- Classify each comment as `valid`, `partially_valid`, `false_positive`, or `needs_more_context`.
-- Draft Gerrit replies for comments classified as `false_positive`.
+- Extract inline comments by file and line.
+- Inspect the target code and call paths behind a comment when needed.
+- Draft Gerrit replies.
 - Prefix every Gerrit comment written by Codex with `[Codex로 생성됨]`.
 - Build Gerrit `ReviewInput` JSON for real review comments.
 - Generate dry-run or executable REST draft comment requests when REST authentication is available.
@@ -44,8 +43,8 @@ Both installation locations are supported. Scripts resolve `config/account.json`
 4. Check Gerrit SSH access.
 5. Query Gerrit by current `HEAD`, `Change-Id`, or a user-provided change number.
 6. Verify that Gerrit current patch set revision matches local `HEAD`.
-7. Extract AI reviewer inline comments.
-8. Validate each comment against the real code and call path.
+7. Extract inline comments.
+8. Check comments against the real code and call path when needed.
 9. Draft Gerrit replies.
 10. Generate dry-run JSON by default.
 11. Create drafts only when explicitly requested by the user.
@@ -125,7 +124,7 @@ Converts reply draft JSON into Gerrit `ReviewInput` JSON.
 It automatically prefixes every comment message and change-level review message with `[Codex로 생성됨]`.
 
 ```bash
-scripts/build_review_input.py replies.json --message "Review analysis dry-run"
+scripts/build_review_input.py replies.json --message "Gerrit review dry-run"
 ```
 
 Defaults:
@@ -163,25 +162,23 @@ Use this script only after the user explicitly asks to publish existing drafts a
 
 - Do not post anything to Gerrit unless the user explicitly requests it.
 - Stop and print setup guidance if Gerrit account config is missing.
-- Default to analysis results and dry-run JSON.
+- Default to lookup results and dry-run JSON.
 - Draft creation is not publishing. Stop after draft creation when the user asked for drafts.
 - Do not treat generic continuation phrases as publish approval.
 - Require publish-specific intent and second confirmation before actual publishing.
 - Exclude `submit`, `abandon`, `restore`, `rebase`, `move`, and label votes from the default skill behavior.
 - Restrict real publishing to comments only.
 - Do not publish comments when local `HEAD` differs from the Gerrit current patch set revision.
-- Require concrete code file and line evidence before classifying a comment as `false_positive`.
-- Use `needs_more_context` instead of `false_positive` when the evidence is incomplete.
+- Check concrete code file and line evidence before writing replies about code behavior.
+- State what evidence is missing when the evidence is incomplete.
 
 ## Output Format
 
-Review analysis should usually be organized in this order.
+Gerrit review work should usually be organized in this order.
 
 - Summary
 - Patch set information
-- Comment verdicts
-- False positives
-- Valid issues
+- Relevant comments
 - Gerrit reply drafts
 - Dry-run JSON
 - Posting status

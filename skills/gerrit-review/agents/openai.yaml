@@ -1,4 +1,4 @@
 interface:
   display_name: "Gerrit Review"
-  short_description: "Analyze and draft Gerrit review replies"
-  default_prompt: "Use $gerrit-review to analyze the current Gerrit patch set and draft replies."
+  short_description: "Query Gerrit reviews and draft replies"
+  default_prompt: "Use $gerrit-review to inspect the current Gerrit patch set and draft replies."

@@ -1,8 +1,8 @@
 # Gerrit Review 스킬
 
-Gerrit patch set 리뷰를 조회하고, AI reviewer 코멘트의 유효성을 실제 코드 기준으로 검토한 뒤, Gerrit 답변 초안이나 draft comment, 실제 review comment를 준비하는 Codex 스킬입니다.
+Gerrit patch set 리뷰를 조회하고, Gerrit 답변 초안이나 draft comment, 실제 review comment를 준비하는 Codex 스킬입니다.
 
-기본 동작은 읽기 전용 분석과 dry-run입니다. Gerrit에 draft나 실제 코멘트를 생성하려면 사용자가 명시적으로 요청해야 합니다.
+기본 동작은 읽기 전용 조회와 dry-run입니다. Gerrit에 draft나 실제 코멘트를 생성하려면 사용자가 명시적으로 요청해야 합니다.
 
 스킬을 사용하려면 먼저 Gerrit 계정 설정이 필요합니다. 설정이 없으면 스크립트는 Gerrit 조회, draft 생성, 실제 게시를 수행하지 않고 설정 안내만 출력합니다.
 
@@ -28,10 +28,9 @@ cp -R skills/gerrit-review "${CODEX_HOME:-$HOME/.codex}/skills/gerrit-review"
 - 로컬 Gerrit 계정 설정을 생성하고 확인합니다.
 - Gerrit SSH 연결 상태를 진단합니다.
 - Gerrit change와 patch set 정보를 조회합니다.
-- AI reviewer의 inline comment를 파일/라인 단위로 정리합니다.
-- 코멘트 대상 파일과 호출 경로를 실제 코드에서 확인합니다.
-- 각 코멘트를 `valid`, `partially_valid`, `false_positive`, `needs_more_context`로 분류합니다.
-- `false_positive`로 판단된 코멘트에 대해 Gerrit 답변 초안을 만듭니다.
+- inline comment를 파일/라인 단위로 정리합니다.
+- 필요한 경우 코멘트 대상 파일과 호출 경로를 실제 코드에서 확인합니다.
+- Gerrit 답변 초안을 만듭니다.
 - Codex가 작성하는 모든 Gerrit comment 앞에 `[Codex로 생성됨]` prefix를 붙입니다.
 - 실제 review comment용 `ReviewInput` JSON을 생성합니다.
 - REST 인증이 가능한 경우 draft comment 요청을 dry-run 또는 실제 실행으로 생성합니다.
@@ -44,8 +43,8 @@ cp -R skills/gerrit-review "${CODEX_HOME:-$HOME/.codex}/skills/gerrit-review"
 4. Gerrit SSH 접근 가능 여부를 확인합니다.
 5. 현재 `HEAD`, `Change-Id`, 또는 사용자가 입력한 change number로 Gerrit 리뷰를 조회합니다.
 6. Gerrit current patch set revision과 로컬 `HEAD`가 일치하는지 확인합니다.
-7. AI reviewer inline comment를 추출합니다.
-8. 각 코멘트를 실제 코드와 호출 경로 기준으로 검토합니다.
+7. inline comment를 추출합니다.
+8. 필요한 경우 각 코멘트를 실제 코드와 호출 경로 기준으로 확인합니다.
 9. Gerrit에 남길 답변 초안을 작성합니다.
 10. 기본적으로 dry-run JSON만 생성합니다.
 11. 사용자가 명시적으로 요청한 경우에만 draft를 생성합니다.
@@ -125,7 +124,7 @@ scripts/gerrit_query.py --query change:I35167bb952735969c2ac4ab1e55044e80649c580
 모든 comment message와 change-level review message 앞에는 `[Codex로 생성됨]`이 자동으로 붙습니다.
 
 ```bash
-scripts/build_review_input.py replies.json --message "Review analysis dry-run"
+scripts/build_review_input.py replies.json --message "Gerrit review dry-run"
 ```
 
 기본값은 다음과 같습니다.
@@ -163,25 +162,23 @@ scripts/publish_drafts.py --change 12345 --revision 3 \
 
 - 사용자가 명시적으로 요청하지 않으면 Gerrit에 아무것도 게시하지 않습니다.
 - Gerrit 계정 설정이 없으면 추가 작업을 수행하지 않고 설정 안내만 출력합니다.
-- 기본 출력은 분석 결과와 dry-run JSON입니다.
+- 기본 출력은 조회 결과와 dry-run JSON입니다.
 - draft 생성은 실제 게시가 아닙니다. draft 요청 후에는 draft 생성에서 멈춥니다.
 - `진행해`, `올려`, `게릿에 올려` 같은 표현은 실제 게시 승인으로 해석하지 않습니다.
 - 실제 게시 전에는 publish-specific 요청과 2차 확인이 모두 필요합니다.
 - `submit`, `abandon`, `restore`, `rebase`, `move`, label vote는 이 스킬의 기본 기능에서 제외합니다.
 - 실제 게시는 comment-only로 제한합니다.
 - 로컬 `HEAD`와 Gerrit current patch set revision이 다르면 실제 게시를 금지합니다.
-- `false_positive` 판정에는 반드시 실제 코드 파일/라인 근거가 필요합니다.
-- 근거가 부족하면 `false_positive` 대신 `needs_more_context`로 분류합니다.
+- 코드 동작에 관한 답변을 작성할 때는 실제 파일/라인 근거를 확인합니다.
+- 근거가 부족하면 부족한 정보를 명시합니다.
 
 ## 답변 형식
 
-리뷰 분석 결과는 기본적으로 다음 순서로 정리합니다.
+Gerrit review 작업 결과는 기본적으로 다음 순서로 정리합니다.
 
 - 요약
 - patch set 정보
-- 코멘트별 판정
-- false positive 목록
-- valid issue 목록
+- 관련 코멘트
 - Gerrit reply 초안
 - dry-run JSON
 - 실제 게시 여부

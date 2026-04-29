@@ -15,7 +15,6 @@ from urllib.parse import urlparse
 
 
 CHANGE_ID_RE = re.compile(r"^Change-Id:\s*(I[0-9a-fA-F]+)\s*$", re.MULTILINE)
-AI_REVIEWER_RE = re.compile(r"\b(ai[-_\s]?reviewer|ai[-_.]?review|ai)\b", re.IGNORECASE)
 SEVERITY_RE = re.compile(r"\[(Critical|Major|Minor|Nit|Info|Warning)\]", re.IGNORECASE)
 SKILL_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG_PATH = SKILL_DIR / "config" / "account.json"
@@ -177,13 +176,6 @@ def reviewer_name(reviewer: dict[str, Any] | None) -> str:
     return reviewer.get("name") or reviewer.get("username") or reviewer.get("email") or ""
 
 
-def is_ai_reviewer(reviewer: dict[str, Any] | None) -> bool:
-    if not reviewer:
-        return False
-    text = " ".join(str(reviewer.get(key, "")) for key in ("name", "username", "email"))
-    return bool(AI_REVIEWER_RE.search(text))
-
-
 def infer_severity(message: str) -> str | None:
     match = SEVERITY_RE.search(message)
     return match.group(1).lower() if match else None
@@ -203,7 +195,6 @@ def normalize_inline_comments(change: dict[str, Any]) -> list[dict[str, Any]]:
                     "line": comment.get("line"),
                     "reviewer": reviewer_name(reviewer),
                     "reviewerRaw": reviewer,
-                    "isAiReviewer": is_ai_reviewer(reviewer),
                     "severity": infer_severity(message),
                     "message": message,
                 }
@@ -227,7 +218,6 @@ def normalize_inline_comments(change: dict[str, Any]) -> list[dict[str, Any]]:
                 "line": comment.get("line"),
                 "reviewer": reviewer_name(reviewer),
                 "reviewerRaw": reviewer,
-                "isAiReviewer": is_ai_reviewer(reviewer),
                 "severity": infer_severity(message),
                 "message": message,
             }
